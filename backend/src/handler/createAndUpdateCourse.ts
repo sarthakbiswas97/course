@@ -24,7 +24,7 @@ export const createCourse = async (req: Request, res: Response) => {
       return;
     }
 
-    const courseCreated = await prisma.courses.create({
+    const courseCreated = await prisma.course.create({
       data: {
         title,
         description,
@@ -73,7 +73,7 @@ export const updateCourse = async (req: Request, res: Response) => {
       return;
     }
 
-    const courseToUpdate = await prisma.courses.findUnique({
+    const courseToUpdate = await prisma.course.findUnique({
       where: {
         id: courseId,
       },
@@ -111,7 +111,7 @@ export const updateCourse = async (req: Request, res: Response) => {
       ...(price && {price})
     };
 
-    const updatedCourse = await prisma.courses.update({
+    const updatedCourse = await prisma.course.update({
       where: { id: courseId },
       data: updateData,
     });

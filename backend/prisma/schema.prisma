@@ -14,20 +14,49 @@ model User {
   email String @unique
   password String
   role Role @default(USER)
-  createdCourses Courses[] @relation("CreatedCourses")
-  purchasedCourses Courses[] @relation("Purchases")
+  createdCourses Course[] @relation("CreatedCourses")
+  purchasedCourses Course[] @relation("Purchases")
+  order Order[]
 }
 
-model Courses {
+model Course {
   id String @id @unique @default(cuid()) 
   title String
   description String
-  price String @default("")
+  price String
   thumbnail String?
   author User @relation("CreatedCourses", fields: [authorId], references: [id])
   authorId String
   purchasedBy User[] @relation("Purchases")
+  order Order[]
 }
+
+model Order{
+  id String @id @unique
+  status OrderStatus @default(PENDING)
+  user User @relation(fields: [userId], references: [id])
+  userId String
+  course Course @relation(fields: [courseId], references: [id])
+  courseId String
+  purchaseDetails PurchaseDetails?
+  @@index([userId])
+  @@index([courseId])
+}
+
+model PurchaseDetails {
+  id         String @id @unique @default(cuid())
+  amount     String 
+  order_id   String @unique
+  payment_id String
+  order      Order @relation(fields: [order_id], references: [id])
+}
+
+enum OrderStatus {
+  PENDING
+  COMPLETED
+  FAILED
+}
+
 
 enum Role {
   USER

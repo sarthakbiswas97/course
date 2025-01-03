@@ -90,18 +90,10 @@ function ListedCourses() {
                 order_id: id,
                 handler: async function (response) {
                     try {
-                        await axios.post("/payment/verify", {
-                            id: id,
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_signature: response.razorpay_signature
+                        
+                        const purchaseResponse = await axios.post(`/buy-course/${courseId}`, {
+                            orderId: id
                         }, {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Content-Type': 'application/json'
-                            }
-                        });
-
-                        const purchaseResponse = await axios.post(`/buy-course/${courseId}`, {}, {
                             headers: {
                                 "Authorization": `Bearer ${token}`
                             }
@@ -122,8 +114,8 @@ function ListedCourses() {
                 }
             };
 
-            const rzp1 = new window.Razorpay(options);
-            rzp1.open();
+            const razorpayWindow = new window.Razorpay(options);
+            razorpayWindow.open();
 
         } catch (error) {
             setErrorMessage(error.response?.data?.message || "Failed to initiate payment");

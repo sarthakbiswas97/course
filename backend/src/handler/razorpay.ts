@@ -1,12 +1,13 @@
 import Razorpay from "razorpay";
+import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils";
 import { Request, Response } from "express";
-import crypto from "crypto";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const KEY_ID = process.env.KEY_ID || "";
 const KEY_SECRET = process.env.KEY_SECRET || "";
+const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET || "";
 
 const instance = new Razorpay({
   key_id: KEY_ID,
@@ -15,57 +16,117 @@ const instance = new Razorpay({
 
 export const createPaymentOrder = async (req: Request, res: Response) => {
   try {
-    const { amount } = req.body;
+    const { amount, courseId } = req.body;
+    const userId = req.userId;
 
-    const options = {
-      amount: Number(amount),
-      currency: "INR",
-      receipt: `order_${Date.now()}`,
-    };
+    const order = await prisma?.$transaction(async (tx) => {
+      const course = await tx.course.findUnique({
+        where: {
+          id: courseId,
+        },
+        include: {
+          purchasedBy: true,
+        },
+      });
 
-    const order = await instance.orders.create(options);
+      if (!course || !course.purchasedBy.some((user) => user.id === userId)) {
+        throw new Error(`Course unavailable or already purchased`);
+      }
 
-    if (!order) {
-      res.status(500).send("Some error occured");
-      return;
-    }
+      const options = {
+        amount: Number(amount),
+        currency: "INR",
+        receipt: `order_${Date.now()}`,
+      };
 
-    res.status(200).json(order);
+      const razorpayOrder = await instance.orders.create(options);
+
+      const dbOrder = await tx.order.create({
+        data: {
+          id: razorpayOrder.id,
+          userId,
+          courseId,
+          status: "PENDING",
+        },
+      });
+
+      return { razorpayOrder, dbOrder };
+    });
+
+    res.status(200).json(order?.razorpayOrder);
   } catch (error) {
-    res.status(500).send(error);
+    res.status(500).json({ error: "Failed to create order" });
   }
 };
 
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
-    const { id, razorpay_payment_id, razorpay_signature } = req.body;
+    const webhookSignature = req.headers["x-razorpay-signature"] as string;
+    // console.log(`webhookSignature`, webhookSignature);
+    // console.log(`body`, JSON.stringify(req.body));
+    // console.log(`headers`, req.headers);
 
-    const hmac = crypto.createHmac("sha256", KEY_SECRET);
+    const isValid = validateWebhookSignature(
+      JSON.stringify(req.body),
+      webhookSignature,
+      WEBHOOK_SECRET
+    );
 
-    hmac.update(`${id}|${razorpay_payment_id}`);
-
-    const generatedSignature = hmac.digest("hex");
-
-    console.log(`HMAC`, hmac);
-    console.log(`generatedSignature`, generatedSignature);
-
-    if (generatedSignature === razorpay_signature) {
-      res.status(200).json({
-        message: "Payment verified successfully",
-      });
-      return
-    } else {
-      res.status(400).json({
-        message: "Payment verification failed",
-      });
-      return
+    if (!isValid) {
+      throw new Error("Invalid Signature");
     }
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: "Internal server error",
+
+    const { event, payload } = req.body;
+    const payment = payload.payment.entity;
+    // console.log(`payment`, payment);
+
+    await prisma?.$transaction(async (tx) => {
+      const order = await tx.order.findUnique({
+        where: { id: payment.order_id },
+      });
+      if (!order) throw new Error("Order not found");
+
+      if (event === "payment.captured") {
+        await tx.purchaseDetails.create({
+          data: {
+            order_id: payment.order_id,
+            amount: (payment.amount / 100).toString(),
+            payment_id: payment.id,
+          },
+        });
+
+        await tx.order.update({
+          where: {
+            id: payment.order_id,
+          },
+          data: {
+            status: "COMPLETED",
+          },
+        });
+
+        await tx.course.update({
+          where: {
+            id: order.courseId,
+          },
+          data: {
+            purchasedBy: {
+              connect: {
+                id: order.userId,
+              },
+            },
+          },
+        });
+      } else if (event === "payment.failed") {
+        await tx.order.update({
+          where: { id: payment.order_id },
+          data: { status: "FAILED" },
+        });
+      }
     });
-    return
+
+    res.status(200).json({ status: "ok" });
+  } catch (error) {
+    console.error("Webhook error:", error);
+    res.status(500).json({ error: "Webhook processing failed" });
   }
 };
-
