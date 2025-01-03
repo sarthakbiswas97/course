@@ -23,9 +23,6 @@ function Razorpay() {
         console.log(orderResponse.data);
         const {amount,id} = orderResponse.data
 
-        // use this response to checkout order
-        // there will be a post request to the server with the order id we got in response
-
         const options = {
             key: KEY_ID,
             amount: Number(amount),
