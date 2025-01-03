@@ -1,7 +1,8 @@
 import Razorpay from "razorpay";
 import { validateWebhookSignature } from "razorpay/dist/utils/razorpay-utils";
-import prisma from "../../lib/prisma";
+import prisma from "../lib/prisma";
 import { Request, Response } from "express";
+import { Prisma } from "@prisma/client";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -20,7 +21,7 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
     const { amount, courseId } = req.body;
     const userId = req.userId;
 
-    const order = await prisma?.$transaction(async (tx) => {
+    const order = await prisma?.$transaction(async (tx: Prisma.TransactionClient) => {
       const course = await tx.course.findUnique({
         where: {
           id: courseId,
@@ -30,7 +31,7 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
         },
       });
 
-      if (!course || !course.purchasedBy.some((user) => user.id === userId)) {
+      if (!course || !course.purchasedBy.some((user: { id: string }) => user.id === userId)) {
         throw new Error(`Course unavailable or already purchased`);
       }
 
@@ -63,9 +64,6 @@ export const createPaymentOrder = async (req: Request, res: Response) => {
 export const verifyPayment = async (req: Request, res: Response) => {
   try {
     const webhookSignature = req.headers["x-razorpay-signature"] as string;
-    // console.log(`webhookSignature`, webhookSignature);
-    // console.log(`body`, JSON.stringify(req.body));
-    // console.log(`headers`, req.headers);
 
     const isValid = validateWebhookSignature(
       JSON.stringify(req.body),
@@ -79,9 +77,8 @@ export const verifyPayment = async (req: Request, res: Response) => {
 
     const { event, payload } = req.body;
     const payment = payload.payment.entity;
-    // console.log(`payment`, payment);
 
-    await prisma?.$transaction(async (tx) => {
+    await prisma?.$transaction(async (tx: Prisma.TransactionClient) => {
       const order = await tx.order.findUnique({
         where: { id: payment.order_id },
       });

@@ -1,4 +1,4 @@
-import prisma from "../../lib/prisma";
+import prisma from "../lib/prisma";
 import { Request, Response } from "express";
 import { S3Client, DeleteObjectCommand } from "@aws-sdk/client-s3";
 
