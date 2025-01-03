@@ -1,6 +1,6 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
-import Signup from './components/Signup'
-import Signin from './components/Signin'
+import Signup from './components/signup'
+import Signin from './components/signin'
 import ListedCourses from './components/ListedCourses'
 import CreateCourse from './components/CreateCourse'
 import UpdateCourse from './components/UpdateCourse'
