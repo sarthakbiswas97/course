@@ -1,5 +1,5 @@
 import prisma from "../../lib/prisma";
-import { Prisma } from "@prisma/client";
+
 import { Request, Response } from "express";
 import { z } from "zod";
 import { userSchema } from "../utils/validation";

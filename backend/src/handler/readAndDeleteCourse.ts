@@ -12,7 +12,7 @@ const s3Client = new S3Client({
 
 export const getAllCourses = async (req: Request, res: Response) => {
   try {
-    const allCourses = await prisma.courses.findMany({
+    const allCourses = await prisma.course.findMany({
       include: {
         author: {
           select: {
@@ -110,7 +110,7 @@ export const deleteCourse = async (req: Request, res: Response) => {
       return;
     }
 
-    const courseToDelete = await prisma.courses.findUnique({
+    const courseToDelete = await prisma.course.findUnique({
       where: {
         id: courseId,
       },
@@ -141,7 +141,7 @@ export const deleteCourse = async (req: Request, res: Response) => {
       return;
     }
 
-    const deletedCourse = await prisma.courses.delete({
+    const deletedCourse = await prisma.course.delete({
       where: {
         id: courseId,
       },
@@ -168,7 +168,7 @@ export const getCourseById = async (req: Request, res: Response) => {
       return;
     }
 
-    const course = await prisma.courses.findUnique({
+    const course = await prisma.course.findUnique({
       where: {
         id: courseId
       },

@@ -6,7 +6,7 @@ import CreateCourse from './components/CreateCourse'
 import UpdateCourse from './components/UpdateCourse'
 import Navbar from './components/Navbar'
 import OwnedCourses from './components/OwnedCourses'
-import Razorpay from './components/razorpay'
+import Razorpay from './components/Razorpay'
 
 function App() {
   return (
