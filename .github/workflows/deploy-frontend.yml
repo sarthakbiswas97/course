@@ -1,7 +1,7 @@
 name: Continuous Deployment for Frontend
 on:
   push:
-    branches: [ deploy ]
+    branches: [ main ]
 jobs:
   build:
     runs-on: ubuntu-latest

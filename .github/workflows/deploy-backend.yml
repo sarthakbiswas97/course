@@ -1,7 +1,7 @@
 name: Continuous Deployment for Backend
 on:
   push:
-    branches: [ deploy ]
+    branches: [ main ]
 jobs:
   build:
     runs-on: ubuntu-latest
