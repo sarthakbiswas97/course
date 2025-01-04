@@ -1,4 +1,4 @@
-name: Continuous Deployment
+name: Continuous Deployment for Frontend
 on:
   push:
     branches: [ main ]
@@ -26,3 +26,16 @@ jobs:
           file: ./frontend/Dockerfile
           push: true
           tags: sarthaksbiswas29/coursefrontend:${{ github.sha }}
+ 
+      - name: Executing Remote SSH Commands
+        uses: appleboy/ssh-action@master
+        with:
+            host: ${{ secrets.SERVER_IP }}
+            username: ${{ secrets.SERVER_USER }}
+            key: ${{ secrets.SERVER_SSH_KEY }}
+            port: 22
+            script: |
+              docker pull sarthaksbiswas29/coursefrontend:${{ github.sha }}
+              docker stop coursefrontend
+              docker rm coursefrontend
+              docker run -p 5173:4173 --name coursefrontend --env-file=.secrets/frontend.env -d sarthaksbiswas29/coursefrontend:${{ github.sha }}
