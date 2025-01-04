@@ -1,4 +1,4 @@
-name: Continuous Deployment
+name: Continuous Deployment for Frontend
 on:
   push:
     branches: [ deploy ]
@@ -38,4 +38,4 @@ jobs:
               docker pull sarthaksbiswas29/coursefrontend:${{ github.sha }}
               docker stop coursefrontend
               docker rm coursefrontend
-              docker run -p 5173:4173 --name coursefrontend --env-file=~/.secrets/frontend.env -d sarthaksbiswas29/coursefrontend:${{ github.sha }}
+              docker run -p 5173:4173 --name coursefrontend --env-file=.secrets/frontend.env -d sarthaksbiswas29/coursefrontend:${{ github.sha }}
